@@ -324,7 +324,7 @@ function normalizeSecret(value) {
 
 function base32ToBytes(secret) {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  const clean = secret.replace(/=+$/, "").toUpperCase();
+  const clean = secret.replace(/=+$/, "").replace(/\s+/g, "").toUpperCase();
   let bits = "";
   for (const char of clean) {
     const value = alphabet.indexOf(char);

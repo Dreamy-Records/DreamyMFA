@@ -1,4 +1,5 @@
 const ACCOUNT_CACHE_KEY = "dreamy-mfa.accounts.v1";
+const SERVICE_WORKER_CACHE = "dreamy-mfa-v5";
 
 const state = {
   accounts: [],
@@ -8,6 +9,8 @@ const state = {
   qrFrameId: 0,
   serverTimeOffsetMs: 0,
   offlineMode: false,
+  offlineReady: false,
+  syncConfirmed: false,
   lastSyncAt: 0,
   syncing: false,
 };
@@ -142,6 +145,8 @@ window.addEventListener("offline", () => enableOfflineFromCache());
 window.setInterval(tick, 1000);
 
 async function init() {
+  await tick();
+
   const currentUser = await loadCurrentUser();
   if (!currentUser) {
     const restored = await enableOfflineFromCache();
@@ -172,6 +177,7 @@ async function loadAccounts({ showError = false } = {}) {
     state.lastSyncAt = Date.now();
     state.accounts = await hydrateAccounts(data.accounts || []);
     cacheAccounts(state.accounts);
+    await prepareOfflineApp();
 
     if (!state.accounts.some((account) => account.id === state.selectedId)) {
       state.selectedId = state.accounts[0]?.id || "";
@@ -250,7 +256,7 @@ async function tick() {
   const remaining = 30 - (seconds % 30);
 
   els.timeLeft.textContent = String(remaining).padStart(2, "0");
-  els.currentTime.textContent = formatTime(now);
+  if (els.currentTime) els.currentTime.textContent = formatTime(now);
   els.progressBar.style.width = `${(remaining / 30) * 100}%`;
   updateSyncStatus();
 
@@ -315,6 +321,7 @@ function updatePermissionUi() {
 function applyServerTime(serverTime) {
   if (Number.isFinite(serverTime)) {
     state.serverTimeOffsetMs = serverTime - Date.now();
+    state.syncConfirmed = true;
   }
 }
 
@@ -323,16 +330,24 @@ function syncedNow() {
 }
 
 function updateSyncStatus() {
+  if (!els.syncStatus) return;
+
   if (state.offlineMode) {
     els.syncStatus.textContent = "オフライン: 保存済みデータで生成中";
     return;
   }
 
+  if (!state.syncConfirmed) {
+    els.syncStatus.textContent = "サーバー同期確認中";
+    return;
+  }
+
   const drift = Math.round(state.serverTimeOffsetMs / 1000);
   const absolute = Math.abs(drift);
-  els.syncStatus.textContent = absolute <= 1
+  const syncText = absolute <= 1
     ? "サーバー時刻と同期済み"
     : `サーバー時刻との差 ${drift > 0 ? "+" : ""}${drift}秒`;
+  els.syncStatus.textContent = state.offlineReady ? `${syncText} / PWA準備OK` : syncText;
 }
 
 function formatTime(timestamp) {
@@ -342,6 +357,37 @@ function formatTime(timestamp) {
     second: "2-digit",
     hour12: false,
   }).format(new Date(timestamp));
+}
+
+async function prepareOfflineApp() {
+  if (!("serviceWorker" in navigator) || !("caches" in window)) return;
+
+  try {
+    await navigator.serviceWorker.ready;
+    const cache = await caches.open(SERVICE_WORKER_CACHE);
+    const required = [
+      "/index.html",
+      "/styles.css",
+      "/app.js",
+      "/dist/authenticator.bundle.js",
+      "/manifest.webmanifest",
+      "/icons/icon-192.png",
+      "/icons/icon-512.png",
+    ];
+
+    await Promise.all(
+      required.map(async (url) => {
+        const response = await fetch(new Request(url, { cache: "reload", credentials: "same-origin" }));
+        if (response.ok && response.type === "basic" && !response.redirected) {
+          await cache.put(url, response);
+        }
+      }),
+    );
+    state.offlineReady = true;
+    updateSyncStatus();
+  } catch (error) {
+    state.offlineReady = false;
+  }
 }
 
 async function handleQrFile(event) {
@@ -536,7 +582,22 @@ function base32ToBytes(secret) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+
+  window.addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      registration.addEventListener("updatefound", () => {
+        const worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener("statechange", () => {
+          if (worker.state === "installed" && navigator.serviceWorker.controller) {
+            worker.postMessage({ type: "SKIP_WAITING" });
+          }
+        });
+      });
+    } catch (error) {
+      state.offlineReady = false;
+    }
   });
 }
