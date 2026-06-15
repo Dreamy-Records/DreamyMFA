@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f1b31">
+    <title>Dreamy MFA</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Dreamy MFA</p>
+        <h1>Dreamy MFA</h1>
+      </div>
+      <div class="clock" aria-live="polite">
+        <span id="timeLeft">--</span>
+        <small>秒</small>
+      </div>
+      <div class="user-badge">
+        <span id="discordUser">Discord認証済み</span>
+        <a href="/logout">ログアウト</a>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="workspace hidden" id="workspace" aria-label="認証アプリ">
+        <aside class="sidebar">
+          <div class="toolbar">
+            <label class="search">
+              <span>検索</span>
+              <input id="searchInput" type="search" placeholder="サービス、アカウント、ロール">
+            </label>
+            <button id="lockButton" type="button" class="secondary">ログアウト</button>
+          </div>
+
+          <div class="accounts-header">
+            <h2>アカウント</h2>
+            <span id="accountCount">0件</span>
+          </div>
+          <div id="accountList" class="account-list"></div>
+        </aside>
+
+        <section class="detail" id="detailPanel">
+          <div class="empty-state" id="emptyState">
+            <h2>アカウントを選択</h2>
+            <p>左の一覧からサービスを選ぶと、30秒ごとに更新される認証コードを表示します。</p>
+          </div>
+
+          <article class="token-view hidden" id="tokenView">
+            <div class="service-meta">
+              <div>
+                <p id="selectedRole" class="role"></p>
+                <h2 id="selectedService"></h2>
+                <p id="selectedAccount"></p>
+              </div>
+              <button id="deleteButton" type="button" class="danger">削除</button>
+            </div>
+
+            <button id="copyTokenButton" class="token-button" type="button">
+              <span id="tokenText">------</span>
+              <small>クリックしてコピー</small>
+            </button>
+
+            <div class="sync-status" aria-live="polite">
+              <span>現在時刻 <strong id="currentTime">--:--:--</strong></span>
+              <span id="syncStatus">サーバー同期確認中</span>
+            </div>
+
+            <div class="progress" aria-hidden="true">
+              <div id="progressBar"></div>
+            </div>
+            <p class="token-hint" id="tokenHint">
+              トークンは30秒ごとに更新されるため、残り時間を見計らってコピペしてください。
+            </p>
+
+            <dl class="facts">
+              <div>
+                <dt>方式</dt>
+                <dd>OATH-TOTP / SHA-1</dd>
+              </div>
+              <div>
+                <dt>桁数</dt>
+                <dd>6桁</dd>
+              </div>
+              <div>
+                <dt>周期</dt>
+                <dd>30秒</dd>
+              </div>
+            </dl>
+          </article>
+        </section>
+
+        <section class="panel add-panel" id="addPanel">
+          <h2>シードを追加</h2>
+
+          <div class="qr-tools">
+            <input id="qrFileInput" class="sr-only" type="file" accept="image/*">
+            <button id="qrFileButton" type="button" class="secondary">QR画像を選択</button>
+            <button id="qrCameraButton" type="button" class="secondary">カメラで読み取り</button>
+          </div>
+
+          <div id="cameraPanel" class="camera-panel hidden">
+            <video id="qrVideo" playsinline muted></video>
+            <canvas id="qrCanvas" class="hidden"></canvas>
+            <button id="qrStopButton" type="button" class="secondary">カメラを停止</button>
+          </div>
+          <p id="qrStatus" class="qr-status" aria-live="polite"></p>
+
+          <form id="secretForm" class="stack">
+            <label>
+              <span>サービス名</span>
+              <input id="serviceInput" type="text" placeholder="例: X" required>
+            </label>
+            <label>
+              <span>アカウント</span>
+              <input id="accountInput" type="text" placeholder="例: @your_account" required>
+            </label>
+            <label>
+              <span>ロール / チーム</span>
+              <input id="roleInput" type="text" placeholder="例: SNS運用">
+            </label>
+            <label>
+              <span>シードまたは otpauth URI</span>
+              <textarea id="secretInput" rows="4" spellcheck="false" placeholder="QRコードを読み取るか、表示されたシードを貼り付け"></textarea>
+            </label>
+            <button type="submit">暗号化して保存</button>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <template id="accountTemplate">
+      <button class="account-item" type="button">
+        <span class="account-service"></span>
+        <span class="account-name"></span>
+        <span class="account-role"></span>
+      </button>
+    </template>
+
+    <script src="dist/authenticator.bundle.js" defer></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>

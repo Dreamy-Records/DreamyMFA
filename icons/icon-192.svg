@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="42" fill="#0f1b31"/>
+  <rect x="38" y="50" width="116" height="92" rx="18" fill="#ffffff"/>
+  <path d="M66 50V36c0-17 13-30 30-30s30 13 30 30v14h-16V36c0-8-6-14-14-14s-14 6-14 14v14H66z" fill="#4f7cff"/>
+  <circle cx="96" cy="94" r="16" fill="#0f1b31"/>
+  <path d="M88 108h16l6 22H82l6-22z" fill="#0f1b31"/>
+  <text x="96" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#ffffff">MFA</text>
+</svg>

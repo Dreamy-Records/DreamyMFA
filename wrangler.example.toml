@@ -1,0 +1,16 @@
+name = "dreamy-mfa"
+main = "worker/index.mjs"
+compatibility_date = "2026-06-01"
+
+routes = [
+  { pattern = "auth.example.com", custom_domain = true }
+]
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "your-d1-database-name"
+database_id = "your-d1-database-id"

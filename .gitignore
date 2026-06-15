@@ -1,0 +1,27 @@
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Cloudflare / Wrangler local state
+.wrangler/
+.dev.vars
+.dev.vars.*
+wrangler.toml
+wrangler.local.toml
+
+# Build output
+dist/
+public/
+
+# Local server logs
+server.log
+server.err.log
+npm-debug.log*
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal

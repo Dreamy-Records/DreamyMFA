@@ -1,0 +1,26 @@
+{
+  "name": "shared-mfa-vault",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "build": "node build.js",
+    "check": "node --check app.js && node --check build.js && node --check serve.js && npm run build",
+    "cf:prepare": "npm run build && node scripts/prepare-cloudflare-assets.js",
+    "cf:dev": "npm run cf:prepare && wrangler dev",
+    "cf:deploy": "npm run cf:prepare && wrangler deploy",
+    "dev": "node serve.js",
+    "start": "node serve.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "authenticator": "^1.1.5",
+    "buffer": "^6.0.3",
+    "esbuild": "^0.28.1",
+    "jsqr": "^1.4.0",
+    "mysql2": "^3.15.3"
+  }
+}
