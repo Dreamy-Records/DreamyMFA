@@ -1,5 +1,5 @@
 const ACCOUNT_CACHE_KEY = "dreamy-mfa.accounts.v1";
-const SERVICE_WORKER_CACHE = "dreamy-mfa-v5";
+const SERVICE_WORKER_CACHE = "dreamy-mfa-v6";
 
 const state = {
   accounts: [],
@@ -11,6 +11,7 @@ const state = {
   offlineMode: false,
   offlineReady: false,
   syncConfirmed: false,
+  accessRevoked: false,
   lastSyncAt: 0,
   syncing: false,
 };
@@ -149,8 +150,12 @@ async function init() {
 
   const currentUser = await loadCurrentUser();
   if (!currentUser) {
-    const restored = await enableOfflineFromCache();
-    if (!restored) location.href = "/login";
+    if (state.accessRevoked) return;
+    if (shouldUseOfflineFallback()) {
+      const restored = await enableOfflineFromCache();
+      if (restored) return;
+    }
+    location.href = "/login";
     return;
   }
 
@@ -169,6 +174,10 @@ async function loadAccounts({ showError = false } = {}) {
 
   try {
     const response = await fetch("/api/accounts", { cache: "no-store" });
+    if (response.status === 401 || response.status === 403) {
+      forceLogout();
+      return;
+    }
     if (!response.ok) throw new Error("accounts request failed");
 
     const data = await response.json();
@@ -186,7 +195,7 @@ async function loadAccounts({ showError = false } = {}) {
     updatePermissionUi();
     renderAccounts();
   } catch (error) {
-    const restored = await enableOfflineFromCache();
+    const restored = shouldUseOfflineFallback() ? await enableOfflineFromCache() : false;
     if (!restored && showError) {
       alert("認証コード一覧を読み込めませんでした。");
       state.accounts = [];
@@ -526,6 +535,10 @@ function setQrStatus(message) {
 async function loadCurrentUser() {
   try {
     const response = await fetch("/api/me", { cache: "no-store" });
+    if (response.status === 401 || response.status === 403) {
+      forceLogout();
+      return null;
+    }
     if (!response.ok) return null;
     const data = await response.json();
     if (!data.authenticated) return null;
@@ -537,6 +550,18 @@ async function loadCurrentUser() {
     els.discordUser.textContent = "オフラインモード";
     return null;
   }
+}
+
+function forceLogout() {
+  state.accessRevoked = true;
+  state.offlineMode = false;
+  state.accounts = [];
+  localStorage.removeItem(ACCOUNT_CACHE_KEY);
+  location.replace("/login");
+}
+
+function shouldUseOfflineFallback() {
+  return !state.accessRevoked && navigator.onLine === false;
 }
 
 function currentAccount() {

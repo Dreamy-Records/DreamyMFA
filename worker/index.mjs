@@ -18,6 +18,7 @@ export default {
         if (url.pathname.startsWith("/api/")) return json({ error: "unauthorized" }, 401);
         return Response.redirect(`${url.origin}/login`, 302);
       }
+      if (!isSessionAllowed(session, env)) return revokeSession(request);
 
       if (url.pathname === "/api/me") return currentUser(session, env);
       if (url.pathname === "/api/accounts" && request.method === "GET") return listAccounts(env);
@@ -104,8 +105,17 @@ async function deleteAccount(id, env, session) {
 
 async function renderLogin(request, env) {
   const session = await getSession(request, env);
-  if (session) return Response.redirect(new URL("/", request.url), 302);
+  if (session) {
+    if (isSessionAllowed(session, env)) return Response.redirect(new URL("/", request.url), 302);
+    const response = renderLoginPage();
+    response.headers.append("Set-Cookie", clearCookie(COOKIE_SESSION));
+    return response;
+  }
 
+  return renderLoginPage();
+}
+
+function renderLoginPage() {
   return html(`<!doctype html>
 <html lang="ja">
   <head>
@@ -218,6 +228,24 @@ function currentUser(session, env) {
       canAddSecrets: canAddSecrets(session.id, env),
     },
   });
+}
+
+function revokeSession(request) {
+  const url = new URL(request.url);
+  if (url.pathname.startsWith("/api/")) {
+    const response = json({ error: "unauthorized" }, 401);
+    response.headers.append("Set-Cookie", clearCookie(COOKIE_SESSION));
+    return response;
+  }
+
+  const headers = new Headers({ Location: "/login" });
+  headers.append("Set-Cookie", clearCookie(COOKIE_SESSION));
+  return new Response(null, { status: 302, headers });
+}
+
+function isSessionAllowed(session, env) {
+  const allowedUsers = parseCsv(env.DISCORD_ALLOWED_USER_IDS || "");
+  return allowedUsers.size === 0 || allowedUsers.has(session.id);
 }
 
 async function exchangeDiscordCode(code, request, env) {
