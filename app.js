@@ -107,7 +107,7 @@ els.qrCameraButton.addEventListener("click", startQrCamera);
 els.qrStopButton.addEventListener("click", stopQrCamera);
 
 els.copyTokenButton.addEventListener("click", async () => {
-  const token = els.tokenText.textContent;
+  const token = currentAccount()?.token || "";
   if (!/^\d{6}$/.test(token)) return;
   await navigator.clipboard.writeText(token);
   els.copyTokenButton.querySelector("small").textContent = "コピーしました";
@@ -256,7 +256,7 @@ function renderSelection() {
   els.selectedRole.textContent = account.role;
   els.selectedService.textContent = account.service;
   els.selectedAccount.textContent = account.account;
-  els.tokenText.textContent = account.token || "------";
+  els.tokenText.textContent = formatTokenForDisplay(account.token);
 }
 
 async function tick() {
@@ -566,6 +566,10 @@ function shouldUseOfflineFallback() {
 
 function currentAccount() {
   return state.accounts.find((account) => account.id === state.selectedId);
+}
+
+function formatTokenForDisplay(token) {
+  return /^\d{6}$/.test(token || "") ? `${token.slice(0, 3)} ${token.slice(3)}` : "------";
 }
 
 async function generateTotp(secret, timestamp) {
