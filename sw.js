@@ -1,4 +1,4 @@
-const CACHE_NAME = "dreamy-mfa-v6";
+const CACHE_NAME = "dreamy-mfa-v8";
 const APP_SHELL = [
   "/index.html",
   "/styles.css",

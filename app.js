@@ -1,5 +1,5 @@
 const ACCOUNT_CACHE_KEY = "dreamy-mfa.accounts.v1";
-const SERVICE_WORKER_CACHE = "dreamy-mfa-v6";
+const SERVICE_WORKER_CACHE = "dreamy-mfa-v8";
 
 const state = {
   accounts: [],

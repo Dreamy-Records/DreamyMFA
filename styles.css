@@ -336,6 +336,7 @@ textarea {
   font-size: clamp(3rem, 10vw, 6rem);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.08em;
+  word-spacing: 0.35em;
 }
 
 .token-button small {
